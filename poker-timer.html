@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poker Timer</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@400;500&family=Crimson+Pro:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --felt: #1a3a2a;
+    --felt-dark: #0f2218;
+    --felt-light: #224d38;
+    --gold: #c9a84c;
+    --gold-light: #e8c96a;
+    --gold-dark: #9a7a30;
+    --cream: #f5edd8;
+    --cream-dim: #c8b99a;
+    --red: #c0392b;
+    --red-light: #e74c3c;
+    --white: #fff;
+    --chip-blue: #3a6fa8;
+    --chip-red: #b93838;
+    --chip-black: #1a1a1a;
+    --shadow: 0 8px 40px rgba(0,0,0,0.6);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--felt-dark);
+    color: var(--cream);
+    font-family: 'Crimson Pro', serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    background-image:
+      radial-gradient(ellipse at 20% 20%, rgba(201,168,76,0.05) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 80%, rgba(26,58,42,0.8) 0%, transparent 60%),
+      repeating-linear-gradient(45deg, transparent, transparent 40px, rgba(255,255,255,0.01) 40px, rgba(255,255,255,0.01) 41px);
+  }
+
+  /* HEADER */
+  header {
+    background: linear-gradient(180deg, #0a1810 0%, var(--felt-dark) 100%);
+    border-bottom: 2px solid var(--gold-dark);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  }
+
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--gold);
+    letter-spacing: 2px;
+    text-shadow: 0 0 20px rgba(201,168,76,0.4);
+  }
+
+  .logo span { color: var(--cream); }
+
+  .suit-row { font-size: 20px; opacity: 0.6; letter-spacing: 6px; }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: rgba(0,0,0,0.3);
+    padding: 8px 32px;
+    border-bottom: 1px solid rgba(201,168,76,0.2);
+  }
+
+  .tab {
+    padding: 8px 24px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--cream-dim);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    border-radius: 4px;
+    text-transform: uppercase;
+    transition: all 0.2s;
+  }
+
+  .tab:hover { color: var(--cream); border-color: rgba(201,168,76,0.3); }
+  .tab.active {
+    background: rgba(201,168,76,0.15);
+    border-color: var(--gold-dark);
+    color: var(--gold-light);
+  }
+
+  /* PANELS */
+  .panel { display: none; padding: 24px 32px; }
+  .panel.active { display: block; }
+
+  /* ---- TIMER PANEL ---- */
+  .timer-layout {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .timer-main {
+    background: linear-gradient(145deg, rgba(26,58,42,0.8), rgba(15,34,24,0.9));
+    border: 2px solid var(--gold-dark);
+    border-radius: 16px;
+    padding: 40px;
+    text-align: center;
+    box-shadow: var(--shadow), inset 0 1px 0 rgba(201,168,76,0.2);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .timer-main::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(201,168,76,0.08), transparent 70%);
+    pointer-events: none;
+  }
+
+  .level-badge {
+    display: inline-block;
+    background: var(--gold-dark);
+    color: var(--felt-dark);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    padding: 4px 16px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .blinds-display {
+    margin: 16px 0;
+  }
+
+  .blinds-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 3px;
+    color: var(--gold-dark);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .blinds-value {
+    font-family: 'Playfair Display', serif;
+    font-size: 52px;
+    font-weight: 700;
+    color: var(--gold-light);
+    text-shadow: 0 0 30px rgba(201,168,76,0.5);
+    line-height: 1;
+    letter-spacing: -1px;
+  }
+
+  .blinds-slash {
+    color: var(--gold-dark);
+    margin: 0 8px;
+  }
+
+  .ante-display {
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    color: var(--cream-dim);
+    margin-top: 8px;
+  }
+
+  .countdown {
+    margin: 32px 0;
+  }
+
+  .time-display {
+    font-family: 'Playfair Display', serif;
+    font-size: 96px;
+    font-weight: 900;
+    color: var(--white);
+    line-height: 1;
+    letter-spacing: -4px;
+    text-shadow: 0 0 40px rgba(255,255,255,0.2);
+    transition: color 0.3s;
+  }
+
+  .time-display.warning { color: #f39c12; text-shadow: 0 0 40px rgba(243,156,18,0.4); }
+  .time-display.danger { color: var(--red-light); text-shadow: 0 0 40px rgba(231,76,60,0.5); animation: pulse 1s infinite; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  .progress-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+    overflow: hidden;
+    margin: 16px 0;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold-dark), var(--gold-light));
+    border-radius: 3px;
+    transition: width 1s linear;
+  }
+
+  .ctrl-buttons {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    padding: 12px 28px;
+    border: none;
+    border-radius: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+  }
+
+  .btn-primary {
+    background: var(--gold);
+    color: var(--felt-dark);
+    box-shadow: 0 4px 16px rgba(201,168,76,0.3);
+  }
+  .btn-primary:hover { background: var(--gold-light); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(201,168,76,0.4); }
+
+  .btn-secondary {
+    background: rgba(255,255,255,0.08);
+    color: var(--cream);
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .btn-secondary:hover { background: rgba(255,255,255,0.14); }
+
+  .btn-danger {
+    background: rgba(192,57,43,0.2);
+    color: var(--red-light);
+    border: 1px solid rgba(192,57,43,0.4);
+  }
+  .btn-danger:hover { background: rgba(192,57,43,0.35); }
+
+  .btn-sm { padding: 7px 16px; font-size: 11px; }
+
+  /* NEXT LEVEL */
+  .next-level-box {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 10px;
+    padding: 16px 24px;
+    margin-top: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .next-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--cream-dim);
+    text-transform: uppercase;
+  }
+
+  .next-value {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    color: var(--cream-dim);
+  }
+
+  /* SIDEBAR */
+  .timer-sidebar { display: flex; flex-direction: column; gap: 16px; }
+
+  .info-card {
+    background: linear-gradient(145deg, rgba(26,58,42,0.7), rgba(15,34,24,0.8));
+    border: 1px solid rgba(201,168,76,0.25);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+  }
+
+  .info-card h3 {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold-dark);
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(201,168,76,0.15);
+  }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .stat-row:last-child { border-bottom: none; }
+  .stat-label { font-size: 14px; color: var(--cream-dim); }
+  .stat-value { font-family: 'DM Mono', monospace; font-size: 14px; color: var(--cream); font-weight: 500; }
+
+  /* Blind schedule */
+  .schedule-list { display: flex; flex-direction: column; gap: 4px; }
+
+  .schedule-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .schedule-item:hover { background: rgba(255,255,255,0.06); }
+  .schedule-item.current { background: rgba(201,168,76,0.15); border: 1px solid rgba(201,168,76,0.3); }
+  .schedule-item.done { opacity: 0.35; }
+
+  .sch-level { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--gold-dark); width: 28px; }
+  .sch-blinds { flex: 1; padding: 0 8px; }
+  .sch-dur { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--cream-dim); }
+
+  /* ---- PLAYERS PANEL ---- */
+  .players-layout { max-width: 900px; margin: 0 auto; }
+
+  .players-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+
+  .players-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    color: var(--gold);
+  }
+
+  .player-count-badge {
+    background: rgba(201,168,76,0.15);
+    border: 1px solid var(--gold-dark);
+    color: var(--gold-light);
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    padding: 4px 16px;
+    border-radius: 20px;
+  }
+
+  .add-player-form {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .input-field {
+    flex: 1;
+    min-width: 180px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(201,168,76,0.3);
+    border-radius: 8px;
+    padding: 10px 16px;
+    color: var(--cream);
+    font-family: 'Crimson Pro', serif;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .input-field:focus { border-color: var(--gold); }
+  .input-field::placeholder { color: rgba(200,185,154,0.4); }
+
+  .players-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+  }
+
+  .player-card {
+    background: linear-gradient(145deg, rgba(26,58,42,0.7), rgba(15,34,24,0.8));
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .player-card:hover { border-color: rgba(201,168,76,0.4); }
+  .player-card.eliminated { opacity: 0.4; border-color: rgba(192,57,43,0.3); }
+  .player-card.eliminated .player-name { text-decoration: line-through; }
+
+  .player-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 700;
+    flex-shrink: 0;
+    border: 2px solid;
+  }
+
+  .player-info { flex: 1; min-width: 0; }
+  .player-name { font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .player-chips { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--gold-dark); }
+
+  .player-actions { display: flex; gap: 4px; }
+
+  .icon-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+
+  .icon-btn-elim { background: rgba(192,57,43,0.2); color: var(--red-light); }
+  .icon-btn-elim:hover { background: rgba(192,57,43,0.4); }
+  .icon-btn-del { background: rgba(255,255,255,0.08); color: var(--cream-dim); }
+  .icon-btn-del:hover { background: rgba(255,255,255,0.16); }
+  .icon-btn-restore { background: rgba(46,204,113,0.2); color: #2ecc71; }
+  .icon-btn-restore:hover { background: rgba(46,204,113,0.35); }
+
+  .seat-position {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--cream-dim);
+    opacity: 0.5;
+  }
+
+  /* ---- SETTINGS PANEL ---- */
+  .settings-layout { max-width: 800px; margin: 0 auto; }
+
+  .settings-section {
+    background: linear-gradient(145deg, rgba(26,58,42,0.7), rgba(15,34,24,0.8));
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+
+  .settings-section h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    color: var(--gold);
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(201,168,76,0.2);
+  }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+
+  .form-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--cream-dim);
+  }
+
+  .blind-schedule-editor { display: flex; flex-direction: column; gap: 8px; }
+
+  .blind-row {
+    display: grid;
+    grid-template-columns: 32px 1fr 1fr 1fr 40px;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .blind-row-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--cream-dim);
+    text-align: center;
+  }
+
+  .blind-row .input-field { min-width: 0; padding: 7px 12px; font-size: 14px; }
+
+  .blind-row-header {
+    display: grid;
+    grid-template-columns: 32px 1fr 1fr 1fr 40px;
+    gap: 8px;
+    padding: 0 0 6px;
+    border-bottom: 1px solid rgba(201,168,76,0.15);
+    margin-bottom: 4px;
+  }
+
+  .col-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--gold-dark);
+    text-align: center;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    background: var(--gold);
+    color: var(--felt-dark);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s;
+    z-index: 999;
+    pointer-events: none;
+  }
+
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* Break overlay */
+  .break-badge {
+    display: inline-block;
+    background: rgba(58,111,168,0.25);
+    border: 1px solid rgba(58,111,168,0.5);
+    color: #74b3f5;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 4px 14px;
+    border-radius: 20px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  /* Chip colors for avatars */
+  .chip-0 { background: rgba(192,57,43,0.2); border-color: var(--chip-red); color: #e88; }
+  .chip-1 { background: rgba(58,111,168,0.2); border-color: var(--chip-blue); color: #8af; }
+  .chip-2 { background: rgba(46,204,113,0.2); border-color: #27ae60; color: #6e8; }
+  .chip-3 { background: rgba(155,89,182,0.2); border-color: #8e44ad; color: #c8a; }
+  .chip-4 { background: rgba(230,126,34,0.2); border-color: #e67e22; color: #fa8; }
+  .chip-5 { background: rgba(201,168,76,0.2); border-color: var(--gold-dark); color: var(--gold); }
+  .chip-6 { background: rgba(26,188,156,0.2); border-color: #1abc9c; color: #5df; }
+  .chip-7 { background: rgba(231,76,60,0.2); border-color: #e74c3c; color: #f87; }
+
+  @media (max-width: 900px) {
+    .timer-layout { grid-template-columns: 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+    .time-display { font-size: 72px; }
+    .blinds-value { font-size: 36px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">POKER <span>TIMER</span></div>
+  <div class="suit-row">♠ ♥ ♦ ♣</div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="showPanel('timer')">⏱ Timer</button>
+  <button class="tab" onclick="showPanel('players')">👥 Spillere</button>
+  <button class="tab" onclick="showPanel('schedule')">📋 Program</button>
+  <button class="tab" onclick="showPanel('settings')">⚙ Innstillinger</button>
+</div>
+
+<!-- TIMER PANEL -->
+<div id="panel-timer" class="panel active">
+  <div class="timer-layout">
+    <div class="timer-main">
+      <div id="break-badge" class="break-badge" style="display:none">☕ Pause</div>
+      <div class="level-badge" id="level-badge">Level 1</div>
+      <div class="blinds-display">
+        <div class="blinds-label">Small / Big Blind</div>
+        <div class="blinds-value">
+          <span id="sb-display">25</span>
+          <span class="blinds-slash">/</span>
+          <span id="bb-display">50</span>
+        </div>
+        <div class="ante-display" id="ante-display"></div>
+      </div>
+      <div class="countdown">
+        <div class="time-display" id="time-display">20:00</div>
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:100%"></div></div>
+      </div>
+      <div class="ctrl-buttons">
+        <button class="btn btn-primary" id="start-btn" onclick="toggleTimer()">▶ Start</button>
+        <button class="btn btn-secondary" onclick="prevLevel()">◀ Forrige</button>
+        <button class="btn btn-secondary" onclick="nextLevel()">▶ Neste</button>
+        <button class="btn btn-danger" onclick="resetTimer()">↺ Reset</button>
+      </div>
+      <div class="next-level-box" id="next-box">
+        <div>
+          <div class="next-label">Neste level</div>
+          <div class="next-value" id="next-display">50 / 100</div>
+        </div>
+        <div style="text-align:right">
+          <div class="next-label">Ante</div>
+          <div class="next-value" id="next-ante">-</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="timer-sidebar">
+      <!-- Game Stats -->
+      <div class="info-card">
+        <h3>♟ Spillinfo</h3>
+        <div class="stat-row">
+          <span class="stat-label">Spillere igjen</span>
+          <span class="stat-value" id="stat-active">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Eliminerte</span>
+          <span class="stat-value" id="stat-elim">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Total chips</span>
+          <span class="stat-value" id="stat-chips">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Avg stack</span>
+          <span class="stat-value" id="stat-avg">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">BB avg</span>
+          <span class="stat-value" id="stat-bbavg">0</span>
+        </div>
+      </div>
+
+      <!-- Blind schedule mini -->
+      <div class="info-card">
+        <h3>📋 Blind-skjema</h3>
+        <div class="schedule-list" id="sidebar-schedule"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PLAYERS PANEL -->
+<div id="panel-players" class="panel">
+  <div class="players-layout">
+    <div class="players-header">
+      <h2>Spillere</h2>
+      <div class="player-count-badge" id="player-count-badge">0 / 15</div>
+    </div>
+    <div class="add-player-form">
+      <input type="text" class="input-field" id="player-name-input" placeholder="Spillernavn..." maxlength="20" onkeydown="if(event.key==='Enter')addPlayer()">
+      <input type="number" class="input-field" id="player-chips-input" placeholder="Start chips..." min="0" style="max-width:180px" onkeydown="if(event.key==='Enter')addPlayer()">
+      <button class="btn btn-primary" onclick="addPlayer()">+ Legg til</button>
+    </div>
+    <div class="players-grid" id="players-grid"></div>
+  </div>
+</div>
+
+<!-- SCHEDULE PANEL -->
+<div id="panel-schedule" class="panel">
+  <div class="settings-layout">
+    <div class="settings-section">
+      <h3>Blind-program</h3>
+      <div class="blind-row-header">
+        <div class="col-label">#</div>
+        <div class="col-label">Small Blind</div>
+        <div class="col-label">Big Blind</div>
+        <div class="col-label">Min / Ante</div>
+        <div></div>
+      </div>
+      <div class="blind-schedule-editor" id="blind-editor"></div>
+      <div style="display:flex;gap:12px;margin-top:16px">
+        <button class="btn btn-secondary" onclick="addBlindLevel()">+ Legg til level</button>
+        <button class="btn btn-primary" onclick="saveSchedule()">💾 Lagre program</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS PANEL -->
+<div id="panel-settings" class="panel">
+  <div class="settings-layout">
+    <div class="settings-section">
+      <h3>Turneringsinnstillinger</h3>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Level varighet (min)</label>
+          <input type="number" class="input-field" id="set-duration" value="20" min="1" max="60">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Start chips per spiller</label>
+          <input type="number" class="input-field" id="set-startchips" value="10000" min="100">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Turnerings-navn</label>
+          <input type="text" class="input-field" id="set-name" value="Hjemme-turnering" maxlength="30">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Kjøp-inn (kr)</label>
+          <input type="number" class="input-field" id="set-buyin" value="100" min="0">
+        </div>
+      </div>
+      <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="saveSettings()">💾 Lagre innstillinger</button>
+        <button class="btn btn-danger" onclick="resetAll()">↺ Tilbakestill alt</button>
+      </div>
+    </div>
+    <div class="settings-section">
+      <h3>Info</h3>
+      <div class="stat-row"><span class="stat-label">Turnering</span><span class="stat-value" id="info-name">-</span></div>
+      <div class="stat-row"><span class="stat-label">Kjøp-inn</span><span class="stat-value" id="info-buyin">-</span></div>
+      <div class="stat-row"><span class="stat-label">Total pott</span><span class="stat-value" id="info-pot">-</span></div>
+      <div class="stat-row"><span class="stat-label">Level varighet</span><span class="stat-value" id="info-dur">-</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ======== STATE ========
+let state = {
+  players: [],
+  currentLevel: 0,
+  timeLeft: 0,
+  totalTime: 0,
+  running: false,
+  settings: {
+    levelDuration: 20,
+    startChips: 10000,
+    tournamentName: 'Hjemme-turnering',
+    buyIn: 100
+  },
+  blinds: [
+    { sb: 25,    bb: 50,    ante: 0,    duration: 20, isBreak: false },
+    { sb: 50,    bb: 100,   ante: 0,    duration: 20, isBreak: false },
+    { sb: 75,    bb: 150,   ante: 0,    duration: 20, isBreak: false },
+    { sb: 100,   bb: 200,   ante: 25,   duration: 20, isBreak: false },
+    { sb: 150,   bb: 300,   ante: 25,   duration: 15, isBreak: false },
+    { sb: 0,     bb: 0,     ante: 0,    duration: 10, isBreak: true  },
+    { sb: 200,   bb: 400,   ante: 50,   duration: 15, isBreak: false },
+    { sb: 300,   bb: 600,   ante: 75,   duration: 15, isBreak: false },
+    { sb: 400,   bb: 800,   ante: 100,  duration: 15, isBreak: false },
+    { sb: 500,   bb: 1000,  ante: 100,  duration: 15, isBreak: false },
+    { sb: 600,   bb: 1200,  ante: 200,  duration: 15, isBreak: false },
+    { sb: 0,     bb: 0,     ante: 0,    duration: 10, isBreak: true  },
+    { sb: 800,   bb: 1600,  ante: 200,  duration: 15, isBreak: false },
+    { sb: 1000,  bb: 2000,  ante: 300,  duration: 15, isBreak: false },
+    { sb: 1500,  bb: 3000,  ante: 400,  duration: 12, isBreak: false },
+    { sb: 2000,  bb: 4000,  ante: 500,  duration: 12, isBreak: false },
+    { sb: 3000,  bb: 6000,  ante: 500,  duration: 10, isBreak: false },
+    { sb: 4000,  bb: 8000,  ante: 1000, duration: 10, isBreak: false },
+    { sb: 5000,  bb: 10000, ante: 1000, duration: 10, isBreak: false },
+    { sb: 7500,  bb: 15000, ante: 2000, duration: 10, isBreak: false },
+  ]
+};
+
+let timerInterval = null;
+const COLORS = ['chip-0','chip-1','chip-2','chip-3','chip-4','chip-5','chip-6','chip-7'];
+
+// ======== INIT ========
+function init() {
+  const saved = localStorage.getItem('pokerTimerState');
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      if (parsed.players) state.players = parsed.players;
+      if (parsed.settings) state.settings = { ...state.settings, ...parsed.settings };
+      if (parsed.blinds) state.blinds = parsed.blinds;
+    } catch(e) {}
+  }
+  loadSettingsUI();
+  renderPlayers();
+  loadLevel(state.currentLevel);
+  renderSidebarSchedule();
+  renderBlindEditor();
+  updateStats();
+  updateInfoPanel();
+}
+
+function saveState() {
+  localStorage.setItem('pokerTimerState', JSON.stringify({
+    players: state.players,
+    settings: state.settings,
+    blinds: state.blinds
+  }));
+}
+
+// ======== PANELS ========
+function showPanel(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'schedule') renderBlindEditor();
+  if (name === 'players') renderPlayers();
+}
+
+// ======== TIMER ========
+function loadLevel(idx) {
+  if (idx >= state.blinds.length) idx = state.blinds.length - 1;
+  const level = state.blinds[idx];
+  const dur = (level.duration || state.settings.levelDuration) * 60;
+  state.timeLeft = dur;
+  state.totalTime = dur;
+  state.currentLevel = idx;
+  updateTimerDisplay();
+  updateLevelDisplay();
+  renderSidebarSchedule();
+}
+
+function toggleTimer() {
+  if (state.running) {
+    clearInterval(timerInterval);
+    state.running = false;
+    document.getElementById('start-btn').textContent = '▶ Start';
+  } else {
+    state.running = true;
+    document.getElementById('start-btn').textContent = '⏸ Pause';
+    timerInterval = setInterval(tick, 1000);
+  }
+}
+
+function tick() {
+  if (state.timeLeft <= 0) {
+    clearInterval(timerInterval);
+    state.running = false;
+    document.getElementById('start-btn').textContent = '▶ Start';
+    levelUp();
+    return;
+  }
+  state.timeLeft--;
+  updateTimerDisplay();
+}
+
+function updateTimerDisplay() {
+  const m = Math.floor(state.timeLeft / 60);
+  const s = state.timeLeft % 60;
+  const display = document.getElementById('time-display');
+  display.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+
+  display.className = 'time-display';
+  if (state.timeLeft <= 30) display.classList.add('danger');
+  else if (state.timeLeft <= 60) display.classList.add('warning');
+
+  const pct = state.totalTime > 0 ? (state.timeLeft / state.totalTime) * 100 : 100;
+  document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+function updateLevelDisplay() {
+  const level = state.blinds[state.currentLevel];
+  const isBreak = level.isBreak;
+
+  document.getElementById('break-badge').style.display = isBreak ? 'inline-block' : 'none';
+  document.getElementById('level-badge').textContent = isBreak ? 'Pause' : `Level ${getLevelNumber(state.currentLevel)}`;
+
+  if (isBreak) {
+    document.getElementById('sb-display').textContent = '—';
+    document.getElementById('bb-display').textContent = '—';
+    document.getElementById('ante-display').textContent = '';
+  } else {
+    document.getElementById('sb-display').textContent = fmtChips(level.sb);
+    document.getElementById('bb-display').textContent = fmtChips(level.bb);
+    document.getElementById('ante-display').textContent = level.ante > 0 ? `Ante: ${fmtChips(level.ante)}` : '';
+  }
+
+  // Next level
+  const next = state.blinds[state.currentLevel + 1];
+  if (next) {
+    if (next.isBreak) {
+      document.getElementById('next-display').textContent = 'Pause';
+      document.getElementById('next-ante').textContent = '-';
+    } else {
+      document.getElementById('next-display').textContent = `${fmtChips(next.sb)} / ${fmtChips(next.bb)}`;
+      document.getElementById('next-ante').textContent = next.ante > 0 ? fmtChips(next.ante) : '-';
+    }
+    document.getElementById('next-box').style.display = 'flex';
+  } else {
+    document.getElementById('next-box').style.display = 'none';
+  }
+}
+
+function getLevelNumber(idx) {
+  let n = 0;
+  for (let i = 0; i <= idx; i++) {
+    if (!state.blinds[i].isBreak) n++;
+  }
+  return n;
+}
+
+function levelUp() {
+  if (state.currentLevel < state.blinds.length - 1) {
+    loadLevel(state.currentLevel + 1);
+    showToast('🃏 Nytt level!');
+    if (state.running) {
+      timerInterval = setInterval(tick, 1000);
+    }
+  } else {
+    showToast('🏆 Turneringen er ferdig!');
+  }
+}
+
+function nextLevel() {
+  clearInterval(timerInterval);
+  state.running = false;
+  document.getElementById('start-btn').textContent = '▶ Start';
+  if (state.currentLevel < state.blinds.length - 1) {
+    loadLevel(state.currentLevel + 1);
+  }
+}
+
+function prevLevel() {
+  clearInterval(timerInterval);
+  state.running = false;
+  document.getElementById('start-btn').textContent = '▶ Start';
+  if (state.currentLevel > 0) {
+    loadLevel(state.currentLevel - 1);
+  }
+}
+
+function resetTimer() {
+  clearInterval(timerInterval);
+  state.running = false;
+  document.getElementById('start-btn').textContent = '▶ Start';
+  loadLevel(state.currentLevel);
+}
+
+// ======== PLAYERS ========
+function addPlayer() {
+  const nameInput = document.getElementById('player-name-input');
+  const chipsInput = document.getElementById('player-chips-input');
+  const name = nameInput.value.trim();
+  const chips = parseInt(chipsInput.value) || state.settings.startChips;
+
+  if (!name) { showToast('Skriv inn spillernavn!'); return; }
+  if (state.players.length >= 15) { showToast('Maks 15 spillere!'); return; }
+
+  state.players.push({
+    id: Date.now(),
+    name,
+    chips,
+    eliminated: false,
+    seat: state.players.length + 1,
+    colorIdx: state.players.length % 8
+  });
+
+  nameInput.value = '';
+  chipsInput.value = '';
+  nameInput.focus();
+  renderPlayers();
+  updateStats();
+  saveState();
+  showToast(`${name} ble lagt til!`);
+}
+
+function eliminatePlayer(id) {
+  const p = state.players.find(p => p.id === id);
+  if (p) {
+    p.eliminated = !p.eliminated;
+    renderPlayers();
+    updateStats();
+    saveState();
+    showToast(p.eliminated ? `${p.name} eliminert` : `${p.name} gjenopptatt`);
+  }
+}
+
+function removePlayer(id) {
+  const p = state.players.find(p => p.id === id);
+  if (p && confirm(`Fjern ${p.name}?`)) {
+    state.players = state.players.filter(p => p.id !== id);
+    renderPlayers();
+    updateStats();
+    saveState();
+    showToast('Spiller fjernet');
+  }
+}
+
+function renderPlayers() {
+  const grid = document.getElementById('players-grid');
+  const badge = document.getElementById('player-count-badge');
+  badge.textContent = `${state.players.length} / 15`;
+
+  if (state.players.length === 0) {
+    grid.innerHTML = '<div style="color:var(--cream-dim);font-size:15px;padding:20px;grid-column:1/-1">Ingen spillere ennå. Legg til spillere ovenfor.</div>';
+    return;
+  }
+
+  grid.innerHTML = state.players.map(p => `
+    <div class="player-card ${p.eliminated ? 'eliminated' : ''}">
+      <div class="seat-position">Sete ${p.seat}</div>
+      <div class="player-avatar ${COLORS[p.colorIdx]}">${p.name.charAt(0).toUpperCase()}</div>
+      <div class="player-info">
+        <div class="player-name">${escHtml(p.name)}</div>
+        <div class="player-chips">${fmtChips(p.chips)} chips</div>
+      </div>
+      <div class="player-actions">
+        ${p.eliminated
+          ? `<button class="icon-btn icon-btn-restore" onclick="eliminatePlayer(${p.id})" title="Gjenopprett">↩</button>`
+          : `<button class="icon-btn icon-btn-elim" onclick="eliminatePlayer(${p.id})" title="Eliminer">✗</button>`
+        }
+        <button class="icon-btn icon-btn-del" onclick="removePlayer(${p.id})" title="Fjern">🗑</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateStats() {
+  const active = state.players.filter(p => !p.eliminated);
+  const elim = state.players.filter(p => p.eliminated);
+  const totalChips = state.players.reduce((s, p) => s + p.chips, 0);
+  const avgStack = active.length > 0 ? Math.round(totalChips / active.length) : 0;
+  const currentBB = state.blinds[state.currentLevel]?.bb || 1;
+  const bbAvg = currentBB > 0 ? Math.round(avgStack / currentBB) : 0;
+
+  document.getElementById('stat-active').textContent = active.length;
+  document.getElementById('stat-elim').textContent = elim.length;
+  document.getElementById('stat-chips').textContent = fmtChips(totalChips);
+  document.getElementById('stat-avg').textContent = fmtChips(avgStack);
+  document.getElementById('stat-bbavg').textContent = bbAvg + ' BB';
+
+  updateInfoPanel();
+}
+
+// ======== SCHEDULE ========
+function renderSidebarSchedule() {
+  const el = document.getElementById('sidebar-schedule');
+  const visible = state.blinds.slice(0, 12);
+  el.innerHTML = visible.map((b, i) => `
+    <div class="schedule-item ${i === state.currentLevel ? 'current' : ''} ${i < state.currentLevel ? 'done' : ''}" onclick="jumpToLevel(${i})">
+      <div class="sch-level">${b.isBreak ? '☕' : getLevelNumber2(i)}</div>
+      <div class="sch-blinds">${b.isBreak ? 'Pause' : `${fmtChips(b.sb)} / ${fmtChips(b.bb)}`}</div>
+      <div class="sch-dur">${b.duration || state.settings.levelDuration}min</div>
+    </div>
+  `).join('') + (state.blinds.length > 12 ? `<div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--cream-dim);padding:8px;text-align:center">+ ${state.blinds.length - 12} til...</div>` : '');
+}
+
+function getLevelNumber2(idx) {
+  let n = 0;
+  for (let i = 0; i <= idx; i++) {
+    if (!state.blinds[i].isBreak) n++;
+  }
+  return n;
+}
+
+function jumpToLevel(idx) {
+  clearInterval(timerInterval);
+  state.running = false;
+  document.getElementById('start-btn').textContent = '▶ Start';
+  loadLevel(idx);
+  showToast(`Hoppet til level ${idx + 1}`);
+}
+
+// ======== BLIND EDITOR ========
+function renderBlindEditor() {
+  const el = document.getElementById('blind-editor');
+  el.innerHTML = state.blinds.map((b, i) => `
+    <div class="blind-row">
+      <div class="blind-row-num">${i + 1}</div>
+      <input type="number" class="input-field" value="${b.sb}" onchange="updateBlind(${i},'sb',this.value)" placeholder="SB" ${b.isBreak ? 'disabled' : ''}>
+      <input type="number" class="input-field" value="${b.bb}" onchange="updateBlind(${i},'bb',this.value)" placeholder="BB" ${b.isBreak ? 'disabled' : ''}>
+      <input type="text" class="input-field" value="${b.isBreak ? 'PAUSE' : b.duration + 'min' + (b.ante > 0 ? ' A:'+b.ante : '')}" onchange="updateBlindFull(${i},this.value)" placeholder="20min">
+      <button class="icon-btn icon-btn-del" onclick="removeBlindLevel(${i})" title="Fjern">✗</button>
+    </div>
+  `).join('');
+}
+
+function updateBlind(idx, field, val) {
+  state.blinds[idx][field] = parseInt(val) || 0;
+  if (idx === state.currentLevel) updateLevelDisplay();
+}
+
+function updateBlindFull(idx, val) {
+  const lower = val.toLowerCase().trim();
+  if (lower === 'pause' || lower === 'break') {
+    state.blinds[idx].isBreak = true;
+    state.blinds[idx].sb = 0;
+    state.blinds[idx].bb = 0;
+    state.blinds[idx].ante = 0;
+    state.blinds[idx].duration = parseInt(state.settings.levelDuration) || 10;
+  } else {
+    state.blinds[idx].isBreak = false;
+    const minMatch = lower.match(/(\d+)\s*min/);
+    if (minMatch) state.blinds[idx].duration = parseInt(minMatch[1]);
+    const anteMatch = lower.match(/a[nte:]*\s*(\d+)/);
+    if (anteMatch) state.blinds[idx].ante = parseInt(anteMatch[1]);
+    else if (!anteMatch && lower.match(/^\d+$/)) state.blinds[idx].duration = parseInt(lower);
+  }
+  renderBlindEditor();
+  renderSidebarSchedule();
+}
+
+function addBlindLevel() {
+  const last = state.blinds[state.blinds.length - 1];
+  state.blinds.push({
+    sb: last ? last.sb * 1.5 : 25,
+    bb: last ? last.bb * 1.5 : 50,
+    ante: last ? last.ante : 0,
+    duration: state.settings.levelDuration,
+    isBreak: false
+  });
+  renderBlindEditor();
+}
+
+function removeBlindLevel(idx) {
+  if (state.blinds.length <= 2) { showToast('Minimum 2 levels!'); return; }
+  state.blinds.splice(idx, 1);
+  if (state.currentLevel >= state.blinds.length) {
+    state.currentLevel = state.blinds.length - 1;
+  }
+  renderBlindEditor();
+  renderSidebarSchedule();
+}
+
+function saveSchedule() {
+  saveState();
+  renderSidebarSchedule();
+  updateLevelDisplay();
+  showToast('Program lagret! ✓');
+}
+
+// ======== SETTINGS ========
+function loadSettingsUI() {
+  document.getElementById('set-duration').value = state.settings.levelDuration;
+  document.getElementById('set-startchips').value = state.settings.startChips;
+  document.getElementById('set-name').value = state.settings.tournamentName;
+  document.getElementById('set-buyin').value = state.settings.buyIn;
+}
+
+function saveSettings() {
+  state.settings.levelDuration = parseInt(document.getElementById('set-duration').value) || 20;
+  state.settings.startChips = parseInt(document.getElementById('set-startchips').value) || 10000;
+  state.settings.tournamentName = document.getElementById('set-name').value || 'Turnering';
+  state.settings.buyIn = parseInt(document.getElementById('set-buyin').value) || 0;
+  saveState();
+  updateInfoPanel();
+  showToast('Innstillinger lagret! ✓');
+}
+
+function updateInfoPanel() {
+  document.getElementById('info-name').textContent = state.settings.tournamentName;
+  document.getElementById('info-buyin').textContent = `${state.settings.buyIn} kr`;
+  document.getElementById('info-pot').textContent = `${state.players.length * state.settings.buyIn} kr`;
+  document.getElementById('info-dur').textContent = `${state.settings.levelDuration} min`;
+}
+
+function resetAll() {
+  if (!confirm('Tilbakestill alt? Dette sletter alle spillere og innstillinger.')) return;
+  clearInterval(timerInterval);
+  localStorage.removeItem('pokerTimerState');
+  state.players = [];
+  state.currentLevel = 0;
+  state.running = false;
+  document.getElementById('start-btn').textContent = '▶ Start';
+  renderPlayers();
+  loadLevel(0);
+  renderSidebarSchedule();
+  renderBlindEditor();
+  updateStats();
+  updateInfoPanel();
+  showToast('Tilbakestilt!');
+}
+
+// ======== UTIL ========
+function fmtChips(n) {
+  if (n >= 1000000) return (n/1000000).toFixed(1).replace('.0','') + 'M';
+  if (n >= 1000) return (n/1000).toFixed(1).replace('.0','') + 'K';
+  return n.toString();
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ======== START ========
+init();
+</script>
+</body>
+</html>
